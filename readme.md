@@ -31,3 +31,25 @@ The following topics will be considered:
 - Code clarity and maintainability
 - Performance
 - Resilience
+
+## Ejecución de myApp y tests
+
+### 1. Instalar dependencias
+
+```bash
+cd shared/myApp
+npm install
+```
+
+### 2. Ejecutar la aplicación
+
+```bash
+npm start
+```
+La aplicación estará disponible en el puerto 5000.
+
+### 3. Ejecutar los tests unitarios y de integración
+
+```bash
+npm test
+```
