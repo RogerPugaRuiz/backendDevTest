@@ -1,32 +1,25 @@
 const axios = require('axios');
+const ProductAxiosAdapter = require('../adapters/product.axios.adapter');
+const MemoryCacheAdapter = require('../adapters/memoryCache.adapter');
+const { NotFoundError } = require('../error/error');
 
-const axiosInstance = axios.create({
-  baseURL: 'http://localhost:3001',
-  timeout: 1000, // 1 segundo de timeout
-});
+// Usar el decorador de caché sobre el adaptador axios
+const adapter = new MemoryCacheAdapter(new ProductAxiosAdapter());
+// const adapter = new ProductAxiosAdapter();
 
-async function getSimilarProducts(productId) {
-  // Obtener los IDs similares del mock
-  const idsResp = await axiosInstance.get(`/product/${productId}/similarids`);
-  const similarIds = idsResp.data;
+async function getSimilarProducts(productId, port = adapter) {
+  const similarIds = await port.getSimilarIds(productId);
   if (!Array.isArray(similarIds) || similarIds.length === 0) {
-    return [];
+    throw new NotFoundError();
   }
-  // Limitar concurrencia (por ejemplo, 5 a la vez)
-  const limit = 5;
-  const results = [];
-  for (let i = 0; i < similarIds.length; i += limit) {
-    const chunk = similarIds.slice(i, i + limit);
-    const settled = await Promise.allSettled(
-      chunk.map(id =>
-        axiosInstance.get(`/product/${id}`)
-          .then(r => r.data)
-      )
-    );
-    results.push(...settled
-      .filter(r => r.status === 'fulfilled' && r.value && r.value.id)
-      .map(r => r.value)
-    );
+  // Ejecutar todas las peticiones en paralelo y esperar a que terminen
+  const products = await Promise.all(
+    similarIds.map(id => port.getProductDetail(String(id)))
+  );
+  // Filtrar productos nulos o sin id
+  const results = products.filter(product => product && product.id);
+  if (results.length === 0) {
+    throw new NotFoundError();
   }
   return results;
 }

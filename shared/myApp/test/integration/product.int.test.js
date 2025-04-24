@@ -1,5 +1,9 @@
 const request = require('supertest');
-const app = require('../app');
+const app = require('../../app');
+
+beforeAll(async () => {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+});
 
 describe('GET /product/:productId/similar', () => {
   it('debe devolver un array de productos similares válidos (200)', async () => {
